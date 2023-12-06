@@ -1,0 +1,127 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+
+#define MAX_CITIES 100
+
+typedef struct {
+    int destination;
+    int time;
+} Edge;
+
+typedef struct {
+    Edge edges[MAX_CITIES];
+    int num_edges;
+} Vertex;
+
+typedef struct {
+    Vertex vertices[MAX_CITIES];
+    int num_vertices;
+} Graph;
+
+int shortest_time[MAX_CITIES];
+int predecessor[MAX_CITIES];
+
+void initGraph(Graph* graph, int num_vertices) {
+    graph->num_vertices = num_vertices;
+    for (int i = 0; i < num_vertices; ++i) {
+        graph->vertices[i].num_edges = 0;
+    }
+}
+
+void addEdge(Graph* graph, int start, int end, int time) {
+    Edge newEdge = {end, time};
+    graph->vertices[start].edges[graph->vertices[start].num_edges++] = newEdge;
+}
+
+void dijkstra(Graph* graph, int start) {
+    int visited[MAX_CITIES] = {0};
+
+    for (int i = 0; i < MAX_CITIES; ++i) {
+        shortest_time[i] = INT_MAX;
+        predecessor[i] = -1;
+    }
+
+    shortest_time[start] = 0;
+
+    for (int i = 0; i < graph->num_vertices - 1; ++i) {
+        int min_time = INT_MAX;
+        int current_vertex;
+
+        for (int j = 0; j < graph->num_vertices; ++j) {
+            if (!visited[j] && shortest_time[j] < min_time) {
+                min_time = shortest_time[j];
+                current_vertex = j;
+            }
+        }
+
+        visited[current_vertex] = 1;
+
+        for (int j = 0; j < graph->vertices[current_vertex].num_edges; ++j) {
+            int neighbor = graph->vertices[current_vertex].edges[j].destination;
+            int time = graph->vertices[current_vertex].edges[j].time;
+
+            if (!visited[neighbor] && shortest_time[current_vertex] + time < shortest_time[neighbor]) {
+                shortest_time[neighbor] = shortest_time[current_vertex] + time;
+                predecessor[neighbor] = current_vertex;
+            }
+        }
+    }
+}
+
+void printShortestPath(int start, int end) {
+    if (shortest_time[end] == INT_MAX) {
+        printf("没有从城市 %d 到城市 %d 的路径。\n", start, end);
+        return;
+    }
+
+    printf("从城市 %d 到城市 %d 的最短时间为 %d 小时。\n", start, end, shortest_time[end]);
+
+    int path[MAX_CITIES];
+    int path_length = 0;
+    int current_vertex = end;
+
+    while (current_vertex != -1) {
+        path[path_length++] = current_vertex;
+        current_vertex = predecessor[current_vertex];
+    }
+
+    printf("路径为： ");
+    for (int i = path_length - 1; i >= 0; --i) {
+        printf("%d", path[i]);
+        if (i > 0) {
+            printf(" -> ");
+        }
+    }
+    printf("\n");
+}
+
+int main() {
+    Graph graph;
+    int num_cities, num_edges;
+    
+    printf("输入城市的数量：");
+    scanf("%d", &num_cities);
+
+    initGraph(&graph, num_cities);
+
+    printf("输入城市之间的道路数量：");
+    scanf("%d", &num_edges);
+
+    for (int i = 0; i < num_edges; ++i) {
+        int start, end, time;
+        printf("输入道路信息 (起始城市 目标城市 时间)：");
+        scanf("%d %d %d", &start, &end, &time);
+        addEdge(&graph, start, end, time);
+    }
+
+    int start_city, end_city;
+    printf("输入出发城市和目标城市：");
+    scanf("%d %d", &start_city, &end_city);
+
+    dijkstra(&graph, start_city);
+
+    printShortestPath(start_city, end_city);
+
+    return 0;
+}
